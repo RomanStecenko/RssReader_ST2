@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 /**
@@ -29,6 +30,9 @@ public class DisplayActivity extends ActionBarActivity {
 
         TextView textView=(TextView) findViewById(R.id.textView);
         textView.setText(formatInfo(info));
+        if (getResources().getBoolean(R.bool.istablet)) {
+            textView.setTextSize(30);
+        }
         setTitle(mainTitle);
     }
 

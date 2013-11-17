@@ -6,6 +6,7 @@ import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.*;
+
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -16,10 +17,22 @@ public class MyActivity extends ActionBarActivity {
     URL url = null;
     ArrayList<ElementRss> arrayList = null;
 
+    public ArrayList<ElementRss> getArrayList() {
+        return arrayList;
+    }
+
+    public void setArrayList(ArrayList<ElementRss> arrayList) {
+        this.arrayList = arrayList;
+    }
+
+
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
+
+        startService(new Intent(this, MyService.class));
 
         try {
             url = new URL(
@@ -50,26 +63,39 @@ public class MyActivity extends ActionBarActivity {
         final ListView listView = (ListView) findViewById(R.id.listView);
         ArrayAdapter adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, titles);
         listView.setAdapter(adapter);
+        if (getResources().getConfiguration().orientation == 1 & getResources().getBoolean(R.bool.istablet)) {
+            LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT);
+            listView.setLayoutParams(layoutParams);
+            TextView textView = (TextView) findViewById(R.id.textView);
+            textView.setText(arrayList.get(0).toStringWithOutTitle());
+            textView.setTextSize(30);
+        }
+        if (getResources().getConfiguration().orientation == 2 & getResources().getBoolean(R.bool.istablet)) {
+            TextView textView = (TextView) findViewById(R.id.textView);
+            textView.setText(arrayList.get(0).toStringWithOutTitle());
+            textView.setTextSize(30);
+        }
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 String showWhatWeGot = (String) listView.getItemAtPosition(position);
                 Toast.makeText(getBaseContext(), showWhatWeGot, Toast.LENGTH_SHORT).show();
 
-                if (!getResources().getBoolean(R.bool.istablet)) {
-                    Intent intent = new Intent(getApplicationContext(), DisplayActivity.class);
-                    intent.putExtra("sendElement",getInfo(arrayList.get(position)));
-                    startActivity(intent);
-                } else {
-                    TextView textView=(TextView) findViewById(R.id.textView);
+                if (getResources().getConfiguration().orientation == 2 & getResources().getBoolean(R.bool.istablet)) {
+                    TextView textView = (TextView) findViewById(R.id.textView);
                     textView.setText(arrayList.get(position).toStringWithOutTitle());
+                } else {
+                    //Log.d(log, "ORIENTT IS-" + getResources().getConfiguration().orientation);
+                    Intent intent = new Intent(getApplicationContext(), DisplayActivity.class);
+                    intent.putExtra("sendElement", getInfo(arrayList.get(position)));
+                    startActivity(intent);
                 }
             }
         });
     }
 
     public String[] getInfo(ElementRss elementRss) {
-        String[] info={elementRss.getDescription(),elementRss.getLink(),elementRss.getPubDate(),elementRss.getTitle()};
+        String[] info = {elementRss.getDescription(), elementRss.getLink(), elementRss.getPubDate(), elementRss.getTitle()};
         return info;
     }
 }
