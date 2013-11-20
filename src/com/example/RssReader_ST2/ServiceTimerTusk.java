@@ -14,9 +14,20 @@ import java.util.TimerTask;
  */
 public class ServiceTimerTusk extends TimerTask {
     public static final String ServiceTimerTuskLOG="Service_Timer_Tusk_LOG";
-    ArrayList<ElementRss> arrayList = null;
+    String pubDate="";
+
+    public String getPubDate() {
+        return pubDate;
+    }
+
+    public void setPubDate(String pubDate) {
+        this.pubDate = pubDate;
+    }
+
+
     @Override
     public void run() {
         Log.d(ServiceTimerTuskLOG,"INSIDE CLASS ServiceTimerTusk");
+        Log.d(ServiceTimerTuskLOG,"INSIDE CLASS ServiceTimerTusk, try print pubDate: "+getPubDate().toString());
     }
 }

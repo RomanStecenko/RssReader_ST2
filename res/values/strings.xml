@@ -3,4 +3,5 @@
     <string name="app_name">RssReader_ST2</string>
     <string name="app_display">Display Activity</string>
     <string name="service_name">my_service</string>
+    <string name="item1">Stop Service</string>
 </resources>

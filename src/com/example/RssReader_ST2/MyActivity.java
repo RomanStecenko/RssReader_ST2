@@ -4,6 +4,8 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.*;
 
@@ -13,9 +15,19 @@ import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
 public class MyActivity extends ActionBarActivity {
-    final String log = "mylog";
+    public static final String log = "mylog";
     URL url = null;
     ArrayList<ElementRss> arrayList = null;
+
+    public URL getUrl() {
+        return url;
+    }
+
+    public void setUrl(URL url) {
+        this.url = url;
+    }
+
+
 
     public ArrayList<ElementRss> getArrayList() {
         return arrayList;
@@ -31,14 +43,13 @@ public class MyActivity extends ActionBarActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
-
-        startService(new Intent(this, MyService.class));
+        Log.d(log, "INSIDE ACTIVITY onCreate() , try to print file dir: " + getApplicationContext().getFilesDir().toString() );
 
         try {
             url = new URL(
-                    //"http://news.yandex.ru/mobile.rss"
+                    "http://news.yandex.ru/mobile.rss"
                     // "http://itnews.com.ua/export/business.rss"
-                    "http://www.hyrax.ru/cgi-bin/mob_xml.cgi"
+                   // "http://www.hyrax.ru/cgi-bin/mob_xml.cgi"
             );
         } catch (MalformedURLException e) {
             Log.d(log, e.toString());
@@ -48,11 +59,15 @@ public class MyActivity extends ActionBarActivity {
 
         try {
             arrayList = new XmlObject().execute(url).get();
+            Log.d(log,"INSIDE CLASS MyActivi, onCreat(), try to see on received arrayList size: "+arrayList.size());
+            Log.d(log,"INSIDE CLASS MyActivi, onCreat(), try to see on received arrayList "+arrayList.toString());
+
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (ExecutionException e) {
             e.printStackTrace();
         }
+
 
         String titles[] = new String[arrayList.size()];
 
@@ -92,10 +107,32 @@ public class MyActivity extends ActionBarActivity {
                 }
             }
         });
+
+//        Intent serviceIntent=new Intent(this, MyService.class);
+//        serviceIntent.putExtra("sendStringToService",getArrayList().get(0).getPubDate());
+//        serviceIntent.putExtra("sendUrlToService",getUrl());
+//        startService(serviceIntent);
+       // startService(new Intent(this, MyService.class));
     }
 
     public String[] getInfo(ElementRss elementRss) {
         String[] info = {elementRss.getDescription(), elementRss.getLink(), elementRss.getPubDate(), elementRss.getTitle()};
         return info;
+    }
+
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.item1) {
+            showInCkick();
+        }
+        return true;
+    }
+
+    public void showInCkick() {
+        Toast.makeText(this, "You click STOP SERVICE BUTTON in ActionBar", Toast.LENGTH_SHORT).show();
     }
 }

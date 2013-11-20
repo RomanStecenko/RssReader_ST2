@@ -29,12 +29,14 @@ import java.util.ArrayList;
 public class XmlObject extends AsyncTask<URL, String, ArrayList<ElementRss>> {
     final String log = "mylog";
     public static  ArrayList<ElementRss>  rssArrayList = null;
+    HttpURLConnection urlConnection = null;
+    InputStream inputStream=null;
 
     @Override
     protected ArrayList<ElementRss> doInBackground(URL... urls) {
 
         try {
-            HttpURLConnection urlConnection = null;
+
             urlConnection = (HttpURLConnection) urls[0].openConnection();
             // urlConnection.setRequestMethod("GET");
             // urlConnection.setDoOutput(true);
@@ -42,7 +44,8 @@ public class XmlObject extends AsyncTask<URL, String, ArrayList<ElementRss>> {
 
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
-            Document doc = builder.parse(urlConnection.getInputStream());
+            inputStream = urlConnection.getInputStream();
+            Document doc = builder.parse(inputStream);
 
 
              rssArrayList = new ArrayList<ElementRss>();
@@ -63,6 +66,7 @@ public class XmlObject extends AsyncTask<URL, String, ArrayList<ElementRss>> {
                 ElementRss elementRss = new ElementRss(eTitle,eLink,eDescription,ePubDate);
 //
                 rssArrayList.add(elementRss);
+                inputStream.close();
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -70,6 +74,7 @@ public class XmlObject extends AsyncTask<URL, String, ArrayList<ElementRss>> {
         catch (Exception e){
             e.printStackTrace();
         }
+
 
         return rssArrayList;
     }
