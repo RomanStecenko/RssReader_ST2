@@ -1,6 +1,7 @@
 package com.example.RssReader_ST2;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
@@ -16,6 +17,7 @@ import java.util.concurrent.ExecutionException;
 
 public class MyActivity extends ActionBarActivity {
     public static final String log = "mylog";
+    private static final String PREFS_NAME ="MySharedPreference" ;
     URL url = null;
     ArrayList<ElementRss> arrayList = null;
 
@@ -26,8 +28,6 @@ public class MyActivity extends ActionBarActivity {
     public void setUrl(URL url) {
         this.url = url;
     }
-
-
 
     public ArrayList<ElementRss> getArrayList() {
         return arrayList;
@@ -113,6 +113,14 @@ public class MyActivity extends ActionBarActivity {
 //        serviceIntent.putExtra("sendUrlToService",getUrl());
 //        startService(serviceIntent);
        // startService(new Intent(this, MyService.class));
+        SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putString("lastPubDate", arrayList.get(0).getPubDate());
+        editor.putString("url",getUrl().toString());
+        editor.commit();
+        Log.d(log,"INSIDE CLASS MyActivity, onCreate(), try to see on sending SharedPreferences: "+arrayList.get(0).getPubDate());
+
+
     }
 
     public String[] getInfo(ElementRss elementRss) {
@@ -133,6 +141,7 @@ public class MyActivity extends ActionBarActivity {
     }
 
     public void showInCkick() {
+        stopService(new Intent(this, MyService.class));
         Toast.makeText(this, "You click STOP SERVICE BUTTON in ActionBar", Toast.LENGTH_SHORT).show();
     }
 }
