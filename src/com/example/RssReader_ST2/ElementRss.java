@@ -78,10 +78,8 @@ public class ElementRss {
     }
 
     public String toStringWithOutTitle() {
-        return "\n" +
-                description + "\n" +
-                link + "\n" +
-                pubDate + "\n" +
-                "\n";
+        return  description + "\n"+ "\n" +
+                link + "\n" + "\n"+
+                pubDate + "\n" ;
     }
 }

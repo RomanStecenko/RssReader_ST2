@@ -4,4 +4,8 @@
     <string name="app_display">Display Activity</string>
     <string name="service_name">my_service</string>
     <string name="item1">Stop Service</string>
+    <string name="item2">Like this news</string>
+    <string name="item22">Dislike this news</string>
+    <string name="item3">Show Likes</string>
+    <string name="item4">Clear Database</string>
 </resources>

@@ -19,14 +19,15 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
 
-public class MyService extends Service implements UpdateNotification{
+public class MyService extends Service implements UpdateNotification {
     public static final String log = "mylog";
-    private static final String PREFS_NAME ="MySharedPreference";
+    private static final String PREFS_NAME = "MySharedPreference";
+    Timer timer = new Timer();
     NotificationManager mNotifyMgr;
-    String chekingPubDate="";
-    URL url=null;
+    String chekingPubDate = "";
+    URL url = null;
     ArrayList<ElementRss> arrayList = null;
-    private String pubDateFromAsyncTask="";
+    private String pubDateFromAsyncTask = "";
 
     public String getPubDateFromAsyncTask() {
         return pubDateFromAsyncTask;
@@ -87,6 +88,7 @@ public class MyService extends Service implements UpdateNotification{
     public IBinder onBind(Intent intent) {
         return mBinder;
     }
+
     private final IBinder mBinder = new LocalBinder();
 
     @Override
@@ -106,47 +108,52 @@ public class MyService extends Service implements UpdateNotification{
         stackBuilder.addNextIntent(resultIntent);
 
         PendingIntent resultPendingIntent =
-                stackBuilder.getPendingIntent(0,PendingIntent.FLAG_UPDATE_CURRENT);
+                stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
 
         builder.setContentIntent(resultPendingIntent);
 
         // Issue a notification in the notification bar
         mNotifyMgr.notify(001, builder.build());
+
+        SharedPreferences updateSP = getSharedPreferences(PREFS_NAME, 0);
+        SharedPreferences.Editor editor = updateSP.edit();
+        editor.putString("lastPubDate", pubDate);
+        editor.commit();
     }
 
     public void onCreate() {
         NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this)
-                        .setSmallIcon(R.drawable.ic_stat_av_add_to_queue)
-                        .setContentTitle("Service RSS Reader")
-                        .setContentText("is started(works)");
+                .setSmallIcon(R.drawable.ic_stat_av_add_to_queue)
+                .setContentTitle("Service RSS Reader")
+                .setContentText("is started(works)");
 
-        Intent resultIntent = new Intent(this, SomeActivity.class);
-        PendingIntent resultPendingIntent = PendingIntent.getActivity(this,0,resultIntent,PendingIntent.FLAG_UPDATE_CURRENT);
+        Intent resultIntent = new Intent(this, MyActivity.class);
+        PendingIntent resultPendingIntent = PendingIntent.getActivity(this, 0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
         stackBuilder.addParentStack(MyActivity.class);
         stackBuilder.addNextIntent(resultIntent);
-        PendingIntent resultPendingIntentBuilder =stackBuilder.getPendingIntent(0,PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent resultPendingIntentBuilder = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
 
         mBuilder.setContentIntent(resultPendingIntent);
         int mNotificationId = 001;
 
-        mNotifyMgr =(NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        mNotifyMgr = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         mNotifyMgr.notify(mNotificationId, mBuilder.build());
 
         SharedPreferences checking = getSharedPreferences(PREFS_NAME, 0);
         String checkPubDate = checking.getString("lastPubDate", "Error(Empty String)");
-          setChekingPubDate(checkPubDate);
+        setChekingPubDate(checkPubDate);
         String url1 = checking.getString("url", "Error(Empty url)");
         setUrl(url1);
-        Log.d(log,"INSIDE CLASS MyService, onCreate(), try to see on received SharedPreferences: "+checkPubDate);
+        Log.d(log, "INSIDE CLASS MyService, onCreate(), try to see on received SharedPreferences: " + checkPubDate);
 
-        Timer timer = new Timer();
+
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                Log.d(log,"INSIDE  ServiceTimerTusk, try print pubDate from SP: "+ getChekingPubDate()
-                       +"\n and url from SP: "+ getUrl().toString());
+                Log.d(log, "INSIDE  ServiceTimerTusk, try print pubDate from SP: " + getChekingPubDate()
+                        + "\n and url from SP: " + getUrl().toString());
 
                 try {
                     setArrayList(new XmlObject().execute(getUrl()).get());
@@ -157,24 +164,23 @@ public class MyService extends Service implements UpdateNotification{
                 }
                 setPubDateFromAsyncTask(getArrayList().get(0).getPubDate());
 
-                Log.d(log,"INSIDE  ServiceTimerTusk, print PubDateFromAsyncTask "+ getPubDateFromAsyncTask());
-                if (!getPubDateFromAsyncTask().equals(getChekingPubDate())){
-                    Log.d(log,"INSIDE CLASS ServiceTimerTusk, call updateNotification() RSS IS UPDATED !_!_!_!_!_!_!_!_! ");
+                Log.d(log, "INSIDE  ServiceTimerTusk, print PubDateFromAsyncTask " + getPubDateFromAsyncTask());
+                if (!getPubDateFromAsyncTask().equals(getChekingPubDate())) {
+                    Log.d(log, "INSIDE CLASS ServiceTimerTusk, call updateNotification() RSS IS UPDATED !_!_!_!_!_!_!_!_! ");
                     updateNotification(getPubDateFromAsyncTask());
-                }
-                else {
-                    Log.d(log,"INSIDE ServiceTimerTusk, Nothing changed \n\n ");
+                } else {
+                    Log.d(log, "INSIDE ServiceTimerTusk, Nothing changed \n\n ");
                 }
             }
-        },50000,300000);
+        }, 50000, 1800000);
     }
 
     @Override
     public void onDestroy() {
         Toast.makeText(this, "My Service Stopped", Toast.LENGTH_LONG).show();
         mNotifyMgr.cancel(001);
+        timer.cancel();
     }
-
 
 
     @Override

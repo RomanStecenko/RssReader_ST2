@@ -1,7 +1,11 @@
 package com.example.RssReader_ST2;
 
+import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
@@ -17,9 +21,13 @@ import java.util.concurrent.ExecutionException;
 
 public class MyActivity extends ActionBarActivity {
     public static final String log = "mylog";
-    private static final String PREFS_NAME ="MySharedPreference" ;
+    private static final String PREFS_NAME = "MySharedPreference";
     URL url = null;
     ArrayList<ElementRss> arrayList = null;
+    MenuItem tabletLike;
+    private static final int TABLET_LIKE_ITEM = 100;
+    int globalPosition;
+    Menu menu;
 
     public URL getUrl() {
         return url;
@@ -38,18 +46,17 @@ public class MyActivity extends ActionBarActivity {
     }
 
 
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
-        Log.d(log, "INSIDE ACTIVITY onCreate() , try to print file dir: " + getApplicationContext().getFilesDir().toString() );
+        //Log.d(log, "INSIDE ACTIVITY onCreate() , try to print file dir: " + getApplicationContext().getFilesDir().toString());
 
         try {
             url = new URL(
                     "http://news.yandex.ru/mobile.rss"
                     // "http://itnews.com.ua/export/business.rss"
-                   // "http://www.hyrax.ru/cgi-bin/mob_xml.cgi"
+                    // "http://www.hyrax.ru/cgi-bin/mob_xml.cgi"
             );
         } catch (MalformedURLException e) {
             Log.d(log, e.toString());
@@ -59,8 +66,8 @@ public class MyActivity extends ActionBarActivity {
 
         try {
             arrayList = new XmlObject().execute(url).get();
-            Log.d(log,"INSIDE CLASS MyActivi, onCreat(), try to see on received arrayList size: "+arrayList.size());
-            Log.d(log,"INSIDE CLASS MyActivi, onCreat(), try to see on received arrayList "+arrayList.toString());
+            Log.d(log, "INSIDE CLASS MyActivi, onCreat(), try to see on received arrayList size: " + arrayList.size());
+            //Log.d(log, "INSIDE CLASS MyActivi, onCreat(), try to see on received arrayList " + arrayList.toString());
 
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -97,10 +104,18 @@ public class MyActivity extends ActionBarActivity {
                 Toast.makeText(getBaseContext(), showWhatWeGot, Toast.LENGTH_SHORT).show();
 
                 if (getResources().getConfiguration().orientation == 2 & getResources().getBoolean(R.bool.istablet)) {
+                    globalPosition = position;
+                    MenuItem tabletLike = menu.findItem(TABLET_LIKE_ITEM);
+                    if (checkElement(getApplicationContext(), arrayList.get(position).getTitle())) {
+                        tabletLike.setIcon(R.drawable.ic_action_rating_bad);
+                        tabletLike.setTitle(R.string.item22);
+                    } else {
+                        tabletLike.setIcon(R.drawable.ic_action_rating_good);
+                        tabletLike.setTitle(R.string.item2);
+                    }
                     TextView textView = (TextView) findViewById(R.id.textView);
                     textView.setText(arrayList.get(position).toStringWithOutTitle());
                 } else {
-                    //Log.d(log, "ORIENTT IS-" + getResources().getConfiguration().orientation);
                     Intent intent = new Intent(getApplicationContext(), DisplayActivity.class);
                     intent.putExtra("sendElement", getInfo(arrayList.get(position)));
                     startActivity(intent);
@@ -112,36 +127,176 @@ public class MyActivity extends ActionBarActivity {
 //        serviceIntent.putExtra("sendStringToService",getArrayList().get(0).getPubDate());
 //        serviceIntent.putExtra("sendUrlToService",getUrl());
 //        startService(serviceIntent);
-       // startService(new Intent(this, MyService.class));
+        // startService(new Intent(this, MyService.class));
         SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
         SharedPreferences.Editor editor = settings.edit();
         editor.putString("lastPubDate", arrayList.get(0).getPubDate());
-        editor.putString("url",getUrl().toString());
+        editor.putString("url", getUrl().toString());
         editor.commit();
-        Log.d(log,"INSIDE CLASS MyActivity, onCreate(), try to see on sending SharedPreferences: "+arrayList.get(0).getPubDate());
+        Log.d(log, "INSIDE CLASS MyActivity, onCreate(), try to see on sending SharedPreferences: " + arrayList.get(0).getPubDate());
 
+    }
+
+    void deleteAllDatabase(final Context context) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                FeedReaderContract mDbContract = new FeedReaderContract();
+                FeedReaderContract.FeedReaderDbHelper mDbHelper = mDbContract.new FeedReaderDbHelper(context);
+                SQLiteDatabase db = mDbHelper.getWritableDatabase();
+                Log.d(log, "--- Clear mytable: ---");
+                // удаляем все записи
+                int clearCount = db.delete(FeedReaderContract.FeedEntry.TABLE_NAME, null, null);
+                Log.d(log, "deleted rows count = " + clearCount);
+                db.close();
+            }
+        });
 
     }
 
     public String[] getInfo(ElementRss elementRss) {
-        String[] info = {elementRss.getDescription(), elementRss.getLink(), elementRss.getPubDate(), elementRss.getTitle()};
-        return info;
+        return new String[]{elementRss.getDescription(), elementRss.getLink(), elementRss.getPubDate(), elementRss.getTitle()};
     }
 
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main_menu, menu);
+        if (getResources().getConfiguration().orientation == 2 & getResources().getBoolean(R.bool.istablet)) {
+            if (checkElement(getApplicationContext(), arrayList.get(globalPosition).getTitle())) {
+                menu.add(Menu.NONE, TABLET_LIKE_ITEM, Menu.FIRST, R.string.item22)
+                        .setIcon(R.drawable.ic_action_rating_bad)
+                        .setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_ALWAYS);
+            } else {
+                menu.add(Menu.NONE, TABLET_LIKE_ITEM, Menu.FIRST, R.string.item2)
+                        .setIcon(R.drawable.ic_action_rating_good)
+                        .setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_ALWAYS);
+            }
+        }
+        this.menu=menu;
         return super.onCreateOptionsMenu(menu);
     }
 
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.item1) {
-            showInCkick();
+        switch (item.getItemId()) {
+            case R.id.item1:
+                stopService(new Intent(this, MyService.class));
+                Toast.makeText(this, "You click STOP SERVICE BUTTON in ActionBar", Toast.LENGTH_SHORT).show();
+                break;
+
+            case R.id.item3:
+                startActivity(new Intent(this, FavoriteElementsActivity.class));
+                break;
+            case R.id.item4:
+                deleteAllDatabase(getApplicationContext());
+                break;
+            case TABLET_LIKE_ITEM:
+                if (item.getIcon().getConstantState().equals(getResources().getDrawable(R.drawable.ic_action_rating_good).getConstantState())) {
+                    Toast.makeText(this, "You click LIKE THIS NEWS in TABLET ActionBar", Toast.LENGTH_SHORT).show();
+                    addElement(getApplicationContext());
+                    item.setIcon(R.drawable.ic_action_rating_bad);
+                    item.setTitle(R.string.item22);
+                    break;
+                } else {
+                    Toast.makeText(this, "You click DISLIKE THIS NEWS in TABLET ActionBar", Toast.LENGTH_SHORT).show();
+                    deleteElement(getApplicationContext());
+                    item.setIcon(R.drawable.ic_action_rating_good);
+                    item.setTitle(R.string.item2);
+                    break;
+                }
         }
         return true;
     }
 
-    public void showInCkick() {
-        stopService(new Intent(this, MyService.class));
-        Toast.makeText(this, "You click STOP SERVICE BUTTON in ActionBar", Toast.LENGTH_SHORT).show();
+
+    void addElement(final Context context) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                FeedReaderContract mDbContract = new FeedReaderContract();
+                FeedReaderContract.FeedReaderDbHelper mDbHelper = mDbContract.new FeedReaderDbHelper(context);
+                SQLiteDatabase db = mDbHelper.getWritableDatabase();
+
+                ContentValues values = new ContentValues();
+                values.put(FeedReaderContract.FeedEntry.COLUMN_NAME_TITLE, arrayList.get(globalPosition).getTitle());
+                values.put(FeedReaderContract.FeedEntry.COLUMN_NAME_DESCRIPTION, arrayList.get(globalPosition).getDescription());
+                values.put(FeedReaderContract.FeedEntry.COLUMN_NAME_LINK, arrayList.get(globalPosition).getLink());
+                values.put(FeedReaderContract.FeedEntry.COLUMN_NAME_PUBDATE, arrayList.get(globalPosition).getPubDate());
+
+
+                long newRowId;
+                newRowId = db.insert(
+                        FeedReaderContract.FeedEntry.TABLE_NAME,
+                        null,
+                        values);
+                Log.d(log, "INSIDE CLASS MyActivity, addElement(), try to see DB result : " + newRowId);
+                db.close();
+            }
+        });
+
     }
+
+    void deleteElement(final Context context) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                FeedReaderContract mDbContract = new FeedReaderContract();
+                FeedReaderContract.FeedReaderDbHelper mDbHelper = mDbContract.new FeedReaderDbHelper(context);
+                SQLiteDatabase db = mDbHelper.getWritableDatabase();
+
+                long newRowId;
+                newRowId = db.delete(
+                        FeedReaderContract.FeedEntry.TABLE_NAME,
+                        FeedReaderContract.FeedEntry.COLUMN_NAME_TITLE + " = ?",
+                        new String[]{arrayList.get(globalPosition).getTitle()});
+                Log.d(log, "INSIDE CLASS DisplayActivity, deleteElement(), try to see DB result : " + newRowId);
+                db.close();
+            }
+        });
+
+    }
+
+    boolean checkElement(final Context context, final String checkTitle) {
+        Log.d(log, "INSIDE MyACTIVITY checkElement(), try to see checkTitle = " + checkTitle);
+        final boolean[] exists = new boolean[1];
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                exists[0] = false;
+                FeedReaderContract mDbContract = new FeedReaderContract();
+                FeedReaderContract.FeedReaderDbHelper mDbHelper = mDbContract.new FeedReaderDbHelper(context);
+                SQLiteDatabase db = mDbHelper.getReadableDatabase();
+                String[] projection = {
+                        FeedReaderContract.FeedEntry._ID,
+                        FeedReaderContract.FeedEntry.COLUMN_NAME_TITLE,
+                        FeedReaderContract.FeedEntry.COLUMN_NAME_DESCRIPTION,
+                        FeedReaderContract.FeedEntry.COLUMN_NAME_LINK,
+                        FeedReaderContract.FeedEntry.COLUMN_NAME_PUBDATE
+                };
+                String selection = FeedReaderContract.FeedEntry.COLUMN_NAME_TITLE + "=?";
+                String selectionArgs[] = {arrayList.get(globalPosition).getTitle()};
+                Log.d(log, "INSIDE MyACTIVITY checkElement(), try to see selectionArgs[]  in db = " + selectionArgs[0]);
+                Cursor cursor = db.query(
+                        FeedReaderContract.FeedEntry.TABLE_NAME, // The table to query
+                        projection, // The columns to return
+                        selection, //selection , // The columns for the WHERE clause
+                        selectionArgs, //selectionArgs , // The values for the WHERE clause
+                        null, // don't group the rows
+                        null, // don't filter by row groups
+                        null // The sort order
+                );
+                if (cursor.moveToFirst()) {
+                    do {
+                        if (checkTitle.equals(cursor.getString(cursor.getColumnIndex(FeedReaderContract.FeedEntry.COLUMN_NAME_TITLE)))) {
+                            exists[0] = true;
+                            Log.d(log, "INSIDE MyACTIVITY checkElement(), try to see boolean exists  in db = " + exists[0]);
+                        }
+                    } while (cursor.moveToNext());
+                }
+                cursor.close();
+                db.close();
+            }
+        });
+        Log.d(log, "INSIDE MyACTIVITY checkElement(), try to see boolean exists  in the END = " + exists[0]);
+        return exists[0];
+    }
+
 }
