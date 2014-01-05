@@ -8,4 +8,11 @@
             STapp:showAsAction="always"
             android:title="@string/item2">
     </item>
+
+    <item
+            android:id="@+id/menu_item_share"
+            STapp:showAsAction="ifRoom"
+            android:title="@string/Share"
+            STapp:actionProviderClass="android.support.v7.widget.ShareActionProvider" />
+
 </menu>

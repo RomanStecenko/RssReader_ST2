@@ -6,8 +6,12 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.Bundle;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBarActivity;
+import android.support.v7.widget.*;
+import android.support.v7.widget.ShareActionProvider;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -27,7 +31,11 @@ public class MyActivity extends ActionBarActivity {
     MenuItem tabletLike;
     private static final int TABLET_LIKE_ITEM = 100;
     int globalPosition;
+    int globalPosition1;
     Menu menu;
+    private ShareActionProvider mShareActionProvider;
+    final Uri CONTACT_URI = Uri
+            .parse("content://com.example.RssReader_ST2/liked_entries");
 
     public URL getUrl() {
         return url;
@@ -100,11 +108,21 @@ public class MyActivity extends ActionBarActivity {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
+                Log.d(log, "globalPosition1 befor = " + globalPosition1 );
+                globalPosition1 = position;
+                Log.d(log, "globalPosition1 after = " + globalPosition1 );
+
                 String showWhatWeGot = (String) listView.getItemAtPosition(position);
                 Toast.makeText(getBaseContext(), showWhatWeGot, Toast.LENGTH_SHORT).show();
 
                 if (getResources().getConfiguration().orientation == 2 & getResources().getBoolean(R.bool.istablet)) {
+
+                    Log.d(log, "globalPosition befor = " + globalPosition );
                     globalPosition = position;
+                    mShareActionProvider.setShareIntent(shareIntent());
+                    Log.d(log, "globalPosition after = " + globalPosition );
+
                     MenuItem tabletLike = menu.findItem(TABLET_LIKE_ITEM);
                     if (checkElement(getApplicationContext(), arrayList.get(position).getTitle())) {
                         tabletLike.setIcon(R.drawable.ic_action_rating_bad);
@@ -160,8 +178,15 @@ public class MyActivity extends ActionBarActivity {
 
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main_menu, menu);
+        MenuItem item = menu.findItem(R.id.menu_item_share);
+        item.setVisible(false);
+        this.invalidateOptionsMenu();
+        mShareActionProvider = (ShareActionProvider) MenuItemCompat.getActionProvider(item);
         if (getResources().getConfiguration().orientation == 2 & getResources().getBoolean(R.bool.istablet)) {
+            item.setVisible(true);
+            this.invalidateOptionsMenu();
             if (checkElement(getApplicationContext(), arrayList.get(globalPosition).getTitle())) {
+                Log.d(log, "globalPosition onCreateOptionsMenu() checkElement() = " + globalPosition );
                 menu.add(Menu.NONE, TABLET_LIKE_ITEM, Menu.FIRST, R.string.item22)
                         .setIcon(R.drawable.ic_action_rating_bad)
                         .setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_ALWAYS);
@@ -171,8 +196,20 @@ public class MyActivity extends ActionBarActivity {
                         .setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_ALWAYS);
             }
         }
+        if (mShareActionProvider != null) {
+            mShareActionProvider.setShareIntent(shareIntent());
+        }
         this.menu=menu;
         return super.onCreateOptionsMenu(menu);
+    }
+
+    public Intent shareIntent () {
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        Log.d(log, "globalPosition shareIntent () = " + globalPosition1 );
+        shareIntent.putExtra(Intent.EXTRA_TEXT, arrayList.get(globalPosition1).getTitle()+" \n "+" \n "+arrayList.get(globalPosition1).getLink());
+        Log.d(log, "globalPosition shareIntent () = " + globalPosition1 );
+        return shareIntent;
     }
 
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -216,11 +253,12 @@ public class MyActivity extends ActionBarActivity {
                 SQLiteDatabase db = mDbHelper.getWritableDatabase();
 
                 ContentValues values = new ContentValues();
+                Log.d(log, "globalPosition addElement() = " + globalPosition );
                 values.put(FeedReaderContract.FeedEntry.COLUMN_NAME_TITLE, arrayList.get(globalPosition).getTitle());
                 values.put(FeedReaderContract.FeedEntry.COLUMN_NAME_DESCRIPTION, arrayList.get(globalPosition).getDescription());
                 values.put(FeedReaderContract.FeedEntry.COLUMN_NAME_LINK, arrayList.get(globalPosition).getLink());
                 values.put(FeedReaderContract.FeedEntry.COLUMN_NAME_PUBDATE, arrayList.get(globalPosition).getPubDate());
-
+                Log.d(log, "globalPosition addElement() = " + globalPosition );
 
                 long newRowId;
                 newRowId = db.insert(
@@ -274,15 +312,18 @@ public class MyActivity extends ActionBarActivity {
                 String selection = FeedReaderContract.FeedEntry.COLUMN_NAME_TITLE + "=?";
                 String selectionArgs[] = {arrayList.get(globalPosition).getTitle()};
                 Log.d(log, "INSIDE MyACTIVITY checkElement(), try to see selectionArgs[]  in db = " + selectionArgs[0]);
-                Cursor cursor = db.query(
-                        FeedReaderContract.FeedEntry.TABLE_NAME, // The table to query
-                        projection, // The columns to return
-                        selection, //selection , // The columns for the WHERE clause
-                        selectionArgs, //selectionArgs , // The values for the WHERE clause
-                        null, // don't group the rows
-                        null, // don't filter by row groups
-                        null // The sort order
-                );
+                Cursor cursor = context.getContentResolver().query(CONTACT_URI, projection, selection, selectionArgs, null);
+                Log.d(log, "INSIDE MyACTIVITY checkElement(), CONTENT PROVAIDER CURSOR" + cursor.getCount());
+                //return (cursor.getCount() > 0);
+//                Cursor cursor = db.query(
+//                        FeedReaderContract.FeedEntry.TABLE_NAME, // The table to query
+//                        projection, // The columns to return
+//                        selection, //selection , // The columns for the WHERE clause
+//                        selectionArgs, //selectionArgs , // The values for the WHERE clause
+//                        null, // don't group the rows
+//                        null, // don't filter by row groups
+//                        null // The sort order
+//                );
                 if (cursor.moveToFirst()) {
                     do {
                         if (checkTitle.equals(cursor.getString(cursor.getColumnIndex(FeedReaderContract.FeedEntry.COLUMN_NAME_TITLE)))) {

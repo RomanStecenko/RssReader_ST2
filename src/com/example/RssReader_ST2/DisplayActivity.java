@@ -7,7 +7,9 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBarActivity;
+import android.support.v7.widget.ShareActionProvider;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -26,6 +28,7 @@ public class DisplayActivity extends ActionBarActivity {
     public static CharSequence mainTitle = "";
     private MenuItem StatusItem;
     ElementRss elementRss;
+    private ShareActionProvider mShareActionProvider;
 
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -145,6 +148,8 @@ public class DisplayActivity extends ActionBarActivity {
 
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.display_activity_menu, menu);
+        MenuItem item = menu.findItem(R.id.menu_item_share);
+        mShareActionProvider = (ShareActionProvider) MenuItemCompat.getActionProvider(item);
         StatusItem = menu.findItem(R.id.item2);
         if(checkElement(getApplicationContext(),elementRss.getTitle())){
             StatusItem.setIcon(R.drawable.ic_action_rating_bad);
@@ -153,8 +158,26 @@ public class DisplayActivity extends ActionBarActivity {
             StatusItem.setIcon(R.drawable.ic_action_rating_good);
             StatusItem.setTitle(R.string.item2);
         }
+        if (mShareActionProvider != null) {
+            mShareActionProvider.setShareIntent(shareIntent());
+        }
         return super.onCreateOptionsMenu(menu);
     }
+
+
+    public Intent shareIntent () {
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(Intent.EXTRA_TEXT, elementRss.getTitle()+" \n "+" \n "+elementRss.getLink());
+        return shareIntent;
+    }
+
+    private void setShareIntent(Intent shareIntent) {
+        if (mShareActionProvider != null) {
+            mShareActionProvider.setShareIntent(shareIntent);
+        }
+    }
+
 
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {

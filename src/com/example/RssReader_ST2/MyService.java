@@ -19,7 +19,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
 
-public class MyService extends Service implements UpdateNotification {
+public class MyService extends Service {
     public static final String log = "mylog";
     private static final String PREFS_NAME = "MySharedPreference";
     Timer timer = new Timer();
@@ -91,7 +91,7 @@ public class MyService extends Service implements UpdateNotification {
 
     private final IBinder mBinder = new LocalBinder();
 
-    @Override
+
     public void updateNotification(String pubDate) {
         NotificationCompat.Builder builder =
                 new NotificationCompat.Builder(this)
